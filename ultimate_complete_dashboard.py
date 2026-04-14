@@ -593,7 +593,10 @@ with st.spinner(f"Loading {st.session_state.selected_tf} data & analyzing..."):
 # Top row - Price
 col1, col2, col3, col4 = st.columns(4)
 with col1:
+    if current_price:
     st.metric("XAUUSD", f"${current_price:.2f}")
+else:
+    st.metric("XAUUSD", "Loading...")
 with col2:
     st.metric("ATR (14)", f"${atr:.2f}", f"{atr/current_price*100:.2f}%")
 with col3:
