@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>XAUUSD AI TRADER</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #ffd700;
+            padding: 12px;
+        }
+        
+        /* Matrix Effect Background */
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.05;
+            pointer-events: none;
+        }
+        
+        /* Gold Theme */
+        .gold-text { color: #ffd700; }
+        .gold-bg { background: linear-gradient(135deg, #ffd700, #ff8c00); }
+        .border-gold { border: 1px solid #ffd70033; }
+        
+        /* Cards */
+        .card {
+            background: rgba(20, 20, 30, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        /* Price Display */
+        .price {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffd700;
+            text-align: center;
+        }
+        
+        .change-positive { color: #00ff88; }
+        .change-negative { color: #ff4444; }
+        
+        /* Signal Cards */
+        .signal-buy {
+            background: linear-gradient(135deg, #0a3a2a, #0a2a1a);
+            border-left: 4px solid #00ff88;
+            border-radius: 16px;
+            padding: 16px;
+        }
+        
+        .signal-sell {
+            background: linear-gradient(135deg, #3a1a1a, #2a0a0a);
+            border-left: 4px solid #ff4444;
+            border-radius: 16px;
+            padding: 16px;
+        }
+        
+        .signal-wait {
+            background: #1a1a2a;
+            border-left: 4px solid #ffd700;
+            border-radius: 16px;
+            padding: 16px;
+        }
+        
+        /* Grid Layout */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        
+        /* Level Cards */
+        .level-card {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #ffd70033;
+        }
+        
+        .level-label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+        }
+        
+        .level-price {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        /* Timeframe Selector */
+        .tf-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+        
+        .tf-btn {
+            background: #1e1e2e;
+            border: 1px solid #ffd70033;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 12px;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tf-btn.active {
+            background: #ffd70022;
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+        
+        /* Metric Cards */
+        .metric {
+            text-align: center;
+            padding: 8px;
+        }
+        
+        .metric-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .metric-label {
+            font-size: 10px;
+            color: #888;
+        }
+        
+        /* Button */
+        .btn-primary {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            border: none;
+            border-radius: 30px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .btn-primary:active {
+            opacity: 0.8;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #333;
+            border-top: 3px solid #ffd700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Matrix Digital Rain Effect */
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.1;
+        }
+        
+        /* Tab Navigation */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            background: #1a1a2a;
+            border-radius: 30px;
+            padding: 4px;
+        }
+        
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-radius: 25px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #888;
+        }
+        
+        .tab.active {
+            background: #ffd70022;
+            color: #ffd700;
+        }
+        
+        /* Scroll */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1a1a2a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #ffd700;
+            border-radius: 4px;
+        }
+        
+        /* Profit Factor colors */
+        .pf-good { color: #00ff88; }
+        .pf-bad { color: #ff4444; }
+        
+        /* Confidence meter */
+        .confidence-bar {
+            background: #2a2a3a;
+            border-radius: 10px;
+            height: 6px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-rain" id="matrixRain"></div>
+    
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <div>Loading AI Trading Dashboard...</div>
+    </div>
+    
+    <div id="content" style="display: none;">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 15px;">
+            <h1 style="font-size: 22px; background: linear-gradient(90deg, #ffd700, #ff8c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🏆 XAUUSD AI TRADER</h1>
+            <div style="font-size: 12px; color: #888;">Powered by Random Forest AI</div>
+        </div>
+        
+        <!-- Price Card -->
+        <div class="card" style="text-align: center;">
+            <div class="price" id="price">$---</div>
+            <div id="change" style="font-size: 14px;">---</div>
+            <div style="font-size: 11px; color: #888; margin-top: 5px;" id="updateTime">---</div>
+        </div>
+        
+        <!-- Timeframe Selector -->
+        <div class="tf-container" id="timeframes"></div>
+        
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-tab="signals">📊 SIGNALS</div>
+            <div class="tab" data-tab="levels">🎯 LEVELS</div>
+            <div class="tab" data-tab="analysis">📈 ANALYSIS</div>
+            <div class="tab" data-tab="backtest">📊 BACKTEST</div>
+        </div>
+        
+        <!-- Tab 1: Signals -->
+        <div id="tab-signals" class="tab-content">
+            <div id="signal-card" class="signal-wait">
+                <div style="font-size: 20px; font-weight: bold;" id="signal-text">⏸️ WAITING</div>
+                <div style="font-size: 12px; margin-top: 5px;" id="confidence-text">Confidence: --%</div>
+                <div class="confidence-bar" id="confidence-bar">
+                    <div class="confidence-fill" id="confidence-fill" style="width: 0%; background: #ffd700;"></div>
+                </div>
+                <div style="font-size: 11px; margin-top: 8px;" id="signal-note">Waiting for market setup</div>
+            </div>
+            
+            <div class="grid-2" style="margin-top: 12px;">
+                <div class="card">
+                    <div class="metric-label">RSI (14)</div>
+                    <div class="metric-value" id="rsi">--</div>
+                </div>
+                <div class="card">
+                    <div class="metric-label">ATR</div>
+                    <div class="metric-value" id="atr">$--</div>
+                </div>
+                <div class="card">
+                    <div class="metric-label">ADX (Trend)</div>
+                    <div class="metric-value" id="adx">--</div>
+                </div>
+                <div class="card">
+                    <div class="metric-label">MACD</div>
+                    <div class="metric-value" id="macd">--</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div style="font-size: 12px; color: #888; margin-bottom: 8px;">✅ INSTITUTIONAL CONFIRMATIONS</div>
+                <div id="confirmations"></div>
+            </div>
+        </div>
+        
+        <!-- Tab 2: Trading Levels -->
+        <div id="tab-levels" class="tab-content" style="display: none;">
+            <div class="grid-4" id="levels-grid"></div>
+            
+            <div class="card" style="margin-top: 12px;">
+                <div class="grid-2">
+                    <div>
+                        <div class="metric-label">RISK AMOUNT</div>
+                        <div class="metric-value" id="risk-amount">$--</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">POSITION SIZE</div>
+                        <div class="metric-value" id="position-size">-- lots</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn-primary" id="record-trade">✅ RECORD TRADE</button>
+        </div>
+        
+        <!-- Tab 3: Technical Analysis -->
+        <div id="tab-analysis" class="tab-content" style="display: none;">
+            <div class="card">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">📊 FIBONACCI LEVELS</div>
+                <div class="grid-3" id="fib-levels"></div>
+            </div>
+            
+            <div class="card">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">📊 PIVOT POINTS</div>
+                <div class="grid-3" id="pivot-points"></div>
+            </div>
+            
+            <div class="card">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">📊 SUPPLY & DEMAND</div>
+                <div class="grid-2">
+                    <div>
+                        <div class="metric-label">SUPPLY ZONE</div>
+                        <div class="metric-value" id="supply-zone">$--</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">DEMAND ZONE</div>
+                        <div class="metric-value" id="demand-zone">$--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">📊 ORDER FLOW</div>
+                <div class="grid-2">
+                    <div>
+                        <div class="metric-label">BUYING PRESSURE</div>
+                        <div class="metric-value" id="buying-pressure">--%</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">SELLING PRESSURE</div>
+                        <div class="metric-value" id="selling-pressure">--%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab 4: Backtest -->
+        <div id="tab-backtest" class="tab-content" style="display: none;">
+            <div class="card">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">⚙️ BACKTEST SETTINGS</div>
+                <select id="backtest-period" style="width: 100%; padding: 10px; background: #1e1e2e; border: 1px solid #ffd70033; border-radius: 10px; color: #ffd700; margin-bottom: 10px;">
+                    <option value="30">30 Days</option>
+                    <option value="60">60 Days</option>
+                    <option value="90" selected>90 Days</option>
+                </select>
+                <button class="btn-primary" id="run-backtest">🚀 RUN BACKTEST</button>
+            </div>
+            
+            <div id="backtest-results" style="display: none;">
+                <div class="card">
+                    <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">📈 BACKTEST RESULTS</div>
+                    <div class="grid-2">
+                        <div>
+                            <div class="metric-label">TOTAL TRADES</div>
+                            <div class="metric-value" id="bt-trades">0</div>
+                        </div>
+                        <div>
+                            <div class="metric-label">WIN RATE</div>
+                            <div class="metric-value" id="bt-winrate">0%</div>
+                        </div>
+                        <div>
+                            <div class="metric-label">PROFIT FACTOR</div>
+                            <div class="metric-value" id="bt-pf">0</div>
+                        </div>
+                        <div>
+                            <div class="metric-label">TOTAL P&L</div>
+                            <div class="metric-value" id="bt-pnl">$0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trade History -->
+        <div class="card" style="margin-top: 12px;">
+            <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">📋 RECENT TRADES</div>
+            <div id="trade-history"></div>
+        </div>
+    </div>
+    
+    <div style="text-align: center; font-size: 10px; color: #444; margin-top: 20px; padding: 10px;">
+        ⚠️ Educational only - Not financial advice
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+        
+        let currentTimeframe = "1h";
+        let currentSymbol = "XAUUSD";
+        let tradeHistory = [];
+        
+        const timeframes = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"];
+        
+        // Initialize timeframes
+        function initTimeframes() {
+            const container = document.getElementById('timeframes');
+            timeframes.forEach(tf => {
+                const btn = document.createElement('div');
+                btn.className = 'tf-btn' + (tf === currentTimeframe ? ' active' : '');
+                btn.textContent = tf;
+                btn.onclick = () => {
+                    document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentTimeframe = tf;
+                    refreshData();
+                };
+                container.appendChild(btn);
+            });
+        }
+        
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const tabName = tab.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.style.display = 'none';
+                });
+                document.getElementById(`tab-${tabName}`).style.display = 'block';
+            });
+        });
+        
+        // Matrix Rain Effect
+        function createMatrixRain() {
+            const canvas = document.createElement('canvas');
+            canvas.style.position = 'fixed';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = '-1';
+            canvas.style.opacity = '0.08';
+            document.body.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const chars = "01アイウエオカキクケコ";
+            const fontSize = 14;
+            const columns = canvas.width / fontSize;
+            const drops = [];
+            for (let i = 0; i < columns; i++) drops[i] = 1;
+            
+            function draw() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#0f0';
+                ctx.font = fontSize + 'px monospace';
+                for (let i = 0; i < drops.length; i++) {
+                    const text = chars[Math.floor(Math.random() * chars.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                    drops[i]++;
+                }
+            }
+            setInterval(draw, 50);
+        }
+        createMatrixRain();
+        
+        // API Calls
+        async function fetchData() {
+            try {
+                const response = await fetch(`/api/data?symbol=${currentSymbol}&timeframe=${currentTimeframe}`);
+                return await response.json();
+            } catch(e) {
+                console.error('Error:', e);
+                return null;
+            }
+        }
+        
+        async function runBacktest() {
+            const period = document.getElementById('backtest-period').value;
+            const btn = document.getElementById('run-backtest');
+            btn.textContent = '⏳ RUNNING...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch(`/api/backtest?symbol=${currentSymbol}&timeframe=${currentTimeframe}&period=${period}`);
+                const data = await response.json();
+                
+                if (data && data.trades) {
+                    document.getElementById('backtest-results').style.display = 'block';
+                    document.getElementById('bt-trades').textContent = data.trades;
+                    document.getElementById('bt-winrate').textContent = `${data.win_rate}%`;
+                    document.getElementById('bt-pf').textContent = data.profit_factor;
+                    document.getElementById('bt-pnl').textContent = `$${data.total_pnl}`;
+                    
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+            } catch(e) {
+                console.error('Backtest error:', e);
+            }
+            
+            btn.textContent = '🚀 RUN BACKTEST';
+            btn.disabled = false;
+        }
+        
+        async function recordTrade() {
+            const data = await fetchData();
+            if (data && data.signal !== 'WAIT') {
+                tradeHistory.unshift({
+                    time: new Date().toLocaleTimeString(),
+                    signal: data.signal,
+                    entry: data.entry,
+                    tp: data.tp2
+                });
+                if (tradeHistory.length > 5) tradeHistory.pop();
+                updateTradeHistory();
+                tg.HapticFeedback.impactOccurred('medium');
+                tg.showPopup({
+                    title: '✅ Trade Recorded',
+                    message: `${data.signal} at $${data.entry}`,
+                    buttons: [{type: 'ok'}]
+                });
+            } else {
+                tg.showPopup({
+                    title: '⚠️ No Signal',
+                    message: 'Wait for a BUY/SELL signal first',
+                    buttons: [{type: 'ok'}]
+                });
+            }
+        }
+        
+        function updateTradeHistory() {
+            const container = document.getElementById('trade-history');
+            if (tradeHistory.length === 0) {
+                container.innerHTML = '<div style="color:#666; text-align:center;">No trades yet</div>';
+                return;
+            }
+            container.innerHTML = tradeHistory.map(t => `
+                <div style="background:#1e1e2e; border-radius:8px; padding:8px; margin-bottom:5px; border-left:3px solid ${t.signal === 'BUY' ? '#00ff88' : '#ff4444'}">
+                    <b>${t.time}</b> | ${t.signal} @ $${t.entry} | TP: $${t.tp}
+                </div>
+            `).join('');
+        }
+        
+        function updateUI(data) {
+            if (!data) return;
+            
+            // Price
+            document.getElementById('price').innerHTML = `$${data.price}`;
+            document.getElementById('change').innerHTML = data.change > 0 ? `📈 +$${data.change}` : `📉 -$${Math.abs(data.change)}`;
+            document.getElementById('updateTime').innerHTML = `Updated: ${new Date().toLocaleTimeString()}`;
+            
+            // Metrics
+            document.getElementById('rsi').innerHTML = data.rsi;
+            document.getElementById('atr').innerHTML = `$${data.atr}`;
+            document.getElementById('adx').innerHTML = data.adx;
+            document.getElementById('macd').innerHTML = data.macd;
+            
+            // Signal
+            const signalCard = document.getElementById('signal-card');
+            const signalText = document.getElementById('signal-text');
+            const confidenceText = document.getElementById('confidence-text');
+            const confidenceFill = document.getElementById('confidence-fill');
+            const signalNote = document.getElementById('signal-note');
+            
+            signalCard.className = data.signal === 'BUY' ? 'signal-buy' : (data.signal === 'SELL' ? 'signal-sell' : 'signal-wait');
+            signalText.innerHTML = data.signal === 'BUY' ? '📈 BUY SIGNAL' : (data.signal === 'SELL' ? '📉 SELL SIGNAL' : '⏸️ WAITING');
+            confidenceText.innerHTML = `Confidence: ${data.confidence}%`;
+            confidenceFill.style.width = `${data.confidence}%`;
+            confidenceFill.style.background = data.signal === 'BUY' ? '#00ff88' : (data.signal === 'SELL' ? '#ff4444' : '#ffd700');
+            signalNote.innerHTML = data.signal === 'BUY' ? 'Price expected to GO UP' : (data.signal === 'SELL' ? 'Price expected to GO DOWN' : 'Waiting for market setup');
+            
+            // Confirmations
+            const confContainer = document.getElementById('confirmations');
+            if (data.confirmations) {
+                confContainer.innerHTML = Object.entries(data.confirmations).map(([key, val]) => 
+                    `<div style="font-size:11px; margin:3px 0; color:${val.includes('✅') ? '#00ff88' : '#888'}">${val}</div>`
+                ).join('');
+            }
+            
+            // Trading Levels
+            if (data.signal !== 'WAIT') {
+                const levelsGrid = document.getElementById('levels-grid');
+                levelsGrid.innerHTML = `
+                    <div class="level-card"><div class="level-label">📍 ENTRY</div><div class="level-price">$${data.entry}</div></div>
+                    <div class="level-card"><div class="level-label">🛑 SL</div><div class="level-price">$${data.sl}</div></div>
+                    <div class="level-card"><div class="level-label">🎯 TP1</div><div class="level-price">$${data.tp1}</div></div>
+                    <div class="level-card"><div class="level-label">🎯 TP2</div><div class="level-price">$${data.tp2}</div></div>
+                    <div class="level-card"><div class="level-label">🎯 TP3</div><div class="level-price">$${data.tp3}</div></div>
+                    <div class="level-card"><div class="level-label">🎯 TP4</div><div class="level-price">$${data.tp4}</div></div>
+                `;
+                document.getElementById('risk-amount').innerHTML = `$${data.risk_amount}`;
+                document.getElementById('position-size').innerHTML = `${data.position_size} lots`;
+            }
+            
+            // Fibonacci
+            if (data.fibonacci) {
+                const fibContainer = document.getElementById('fib-levels');
+                fibContainer.innerHTML = Object.entries(data.fibonacci).map(([level, price]) =>
+                    `<div class="level-card"><div class="level-label">${level}</div><div class="level-price">$${price}</div></div>`
+                ).join('');
+            }
+            
+            // Pivot Points
+            if (data.pivots) {
+                const pivotContainer = document.getElementById('pivot-points');
+                pivotContainer.innerHTML = `
+                    <div class="level-card"><div class="level-label">R1</div><div class="level-price">$${data.pivots.r1}</div></div>
+                    <div class="level-card"><div class="level-label">PIVOT</div><div class="level-price">$${data.pivots.pivot}</div></div>
+                    <div class="level-card"><div class="level-label">S1</div><div class="level-price">$${data.pivots.s1}</div></div>
+                `;
+            }
+            
+            // Supply/Demand
+            document.getElementById('supply-zone').innerHTML = `$${data.supply_zone}`;
+            document.getElementById('demand-zone').innerHTML = `$${data.demand_zone}`;
+            
+            // Order Flow
+            document.getElementById('buying-pressure').innerHTML = `${data.buying_pressure}%`;
+            document.getElementById('selling-pressure').innerHTML = `${data.selling_pressure}%`;
+        }
+        
+        async function refreshData() {
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('content').style.display = 'none';
+            
+            const data = await fetchData();
+            if (data) updateUI(data);
+            
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+        }
+        
+        // Event Listeners
+        document.getElementById('record-trade').addEventListener('click', recordTrade);
+        document.getElementById('run-backtest').addEventListener('click', runBacktest);
+        
+        // Initialize
+        initTimeframes();
+        refreshData();
+        setInterval(refreshData, 30000); // Refresh every 30 seconds
+    </script>
+</body>
+</html>
