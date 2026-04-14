@@ -115,7 +115,7 @@ def train_model(df):
     X_train_scaled = scaler.fit_transform(X_train)
     X_val_scaled = scaler.transform(X_val)
     
-    model = xgb.XGBClassifier(n_estimators=150, max_depth=6, learning_rate=0.05, random_state=42, use_label_encoder=False, eval_metric='logloss')
+    model = xgb.XGBClassifier(n_estimators=150, max_depth=6, learning_rate=0.05, random_state=42, eval_metric='logloss')
     model.fit(X_train_scaled, y_train)
     accuracy = model.score(X_val_scaled, y_val)
     
@@ -231,5 +231,7 @@ if df is not None and len(df) > 50:
             st.subheader("📋 RECENT TRADES")
             for trade in st.session_state.trade_history[-5:]:
                 st.info(f"{trade['time'].strftime('%Y-%m-%d %H:%M:%S')} | {trade['signal']} | Entry: ${trade['entry']:.2f} | TP: ${trade['tp2']:.2f} | Conf: {trade['confidence']:.0f}%")
+else:
+    st.error("Failed to load market data. Please check your internet connection and refresh.")
 
-st.caption("🚀 XGBoost AI Trading System")
+st.caption("🚀 XGBoost AI Trading System | Better accuracy than Random Forest")
